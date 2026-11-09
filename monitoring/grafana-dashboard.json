@@ -1,0 +1,51 @@
+{
+  "title": "Query Sentinel",
+  "uid": "query-sentinel",
+  "schemaVersion": 39,
+  "time": { "from": "now-3h", "to": "now" },
+  "refresh": "30s",
+  "panels": [
+    {
+      "type": "table",
+      "title": "At-risk queries (latest score)",
+      "gridPos": { "x": 0, "y": 0, "w": 24, "h": 9 },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "sentinel-pg" },
+      "targets": [{
+        "refId": "A", "format": "table", "rawQuery": true,
+        "rawSql": "SELECT DISTINCT ON (queryid) scored_at, round(probability::numeric, 2) AS p_regression, round(window_mean_ms::numeric, 2) AS now_ms, round(baseline_ms::numeric, 2) AS baseline_ms, left(query, 140) AS query, model_version FROM sentinel.scores WHERE $__timeFilter(scored_at) ORDER BY queryid, scored_at DESC"
+      }],
+      "transformations": [{ "id": "sortBy", "options": { "sort": [{ "field": "p_regression", "desc": true }] } }]
+    },
+    {
+      "type": "timeseries",
+      "title": "Regression probability by query",
+      "gridPos": { "x": 0, "y": 9, "w": 12, "h": 9 },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "sentinel-pg" },
+      "fieldConfig": { "defaults": { "min": 0, "max": 1, "custom": { "drawStyle": "line" } } },
+      "targets": [{
+        "refId": "A", "format": "time_series", "rawQuery": true,
+        "rawSql": "SELECT scored_at AS time, left(query, 50) AS metric, probability AS value FROM sentinel.scores WHERE $__timeFilter(scored_at) ORDER BY 1"
+      }]
+    },
+    {
+      "type": "timeseries",
+      "title": "Latency vs baseline (ratio)",
+      "gridPos": { "x": 12, "y": 9, "w": 12, "h": 9 },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "sentinel-pg" },
+      "targets": [{
+        "refId": "A", "format": "time_series", "rawQuery": true,
+        "rawSql": "SELECT scored_at AS time, left(query, 50) AS metric, window_mean_ms / NULLIF(baseline_ms, 0) AS value FROM sentinel.scores WHERE $__timeFilter(scored_at) ORDER BY 1"
+      }]
+    },
+    {
+      "type": "stat",
+      "title": "Flagged queries (p ≥ 0.7) in range",
+      "gridPos": { "x": 0, "y": 18, "w": 8, "h": 5 },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "sentinel-pg" },
+      "targets": [{
+        "refId": "A", "format": "table", "rawQuery": true,
+        "rawSql": "SELECT count(DISTINCT queryid) FROM sentinel.scores WHERE $__timeFilter(scored_at) AND probability >= 0.7"
+      }]
+    }
+  ]
+}

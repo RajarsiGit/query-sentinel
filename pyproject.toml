@@ -1,0 +1,40 @@
+[project]
+name = "query-sentinel"
+version = "0.1.0"
+description = "Predict PostgreSQL query regressions before users feel them — an MLOps loop on Amazon SageMaker AI"
+requires-python = ">=3.11"
+dependencies = [
+    "psycopg[binary]>=3.2",
+    "boto3>=1.35",
+]
+
+[project.optional-dependencies]
+ml = ["xgboost>=2.0", "pandas>=2.0", "numpy>=1.26", "scikit-learn>=1.4"]
+dev = ["pytest>=8", "ruff>=0.6", "query-sentinel[ml]"]
+
+[project.scripts]
+sentinel = "sentinel.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["sentinel", "pipeline"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "RUF"]
+
+# step scripts run inside SageMaker containers with older Python: keep their syntax conservative
+[tool.ruff.lint.per-file-ignores]
+"pipeline/scripts/*" = ["UP"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["sentinel", "pipeline", "stacks", "conftest"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

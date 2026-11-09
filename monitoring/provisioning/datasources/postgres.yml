@@ -1,0 +1,13 @@
+apiVersion: 1
+datasources:
+  - name: sentinel-postgres
+    uid: sentinel-pg
+    type: grafana-postgresql-datasource
+    url: postgres:5432
+    user: sentinel
+    secureJsonData:
+      password: sentinel
+    jsonData:
+      database: shop
+      sslmode: disable
+      postgresVersion: 1600
